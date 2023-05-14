@@ -131,6 +131,7 @@ select::placeholder {
 	background-color: var(--color-main);
 	border-radius: var(--border-radius-common);
 	padding: 4px 8px;
+	margin: 8px 0;
 	border: 1px solid var(--color-border);
 	transition: .2s;
 }
@@ -172,6 +173,10 @@ select::placeholder {
 .select_many_item[new] {
 	border-color: var(--color-text-blue);
 }
+.select_many_item[new] .text {
+	cursor: text;
+	font-family: 'Nunito Sans', sans-serif;
+}
 .select_many_item:hover {
 	border-color: var(--color-oposite);
 	cursor: default;
@@ -192,6 +197,7 @@ select::placeholder {
 
 textarea {
 	padding: 15px;
+	margin: 8px 0;
 	font-size: 1.3rem;
 	border-radius: var(--border-radius-common);
 	background-color: var(--color-second);
@@ -455,6 +461,7 @@ footer{
 	margin-top: auto;
 	border-radius: 20px 20px 0 0;
 	padding: 20px;
+	margin-top: 8px;
 }
 
 .footer_text {
@@ -558,7 +565,6 @@ h2 {
 	width: 70%;
 	height: 7em;
 	resize: none;
-	margin-top: 1%;
 }
 
 .q{
@@ -642,7 +648,6 @@ h2 {
 }
 
 .bookAddFormBlock {
-	padding: 8px 0;
 	display: flex;
 	flex-direction: column;
 }

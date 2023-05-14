@@ -135,11 +135,11 @@ window.onload = function(){
 						<p class="nazva"><?php echo $book['name'];?></p><br>
 						<p>Автор:  <span class="textInfo"><?php echo $book['author'];?></span></p>
 						<p>Жанр: <span class="textInfo">
-							<? foreach (getBookGenres($bookId) AS $genreId => $genreName): ?>
-								<? echo $joinSing; ?>
-								<a href="/?genre=<? echo $genreId ?>" class="textInfoGenres"><? echo $genreName ?></a>
-								<? $joinSing = "& "; ?>
-							<? endforeach; ?>
+							<? $joinSing = ''; foreach (getBookGenres($bookId) AS $genreId => $genreName):
+								echo $joinSing;
+								echo "<a href='/?genre=$genreId' class='textInfoGenres'>$genreName</a>";
+								$joinSing = ", ";
+							endforeach; ?>
 						</span></p>
 						<p>Рік: <span class="textInfo"><?php echo $book['date'];?></span></p>
 						<p>Мова: <span class="textInfo"><?php echo $book['language'];?></span></p>

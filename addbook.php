@@ -6,6 +6,69 @@
 	$status == 'Admin' || $error = "Потрібен статус адміністратора!";
 	$login || header("location: /auth.php");
 
+	/**
+	 * @return True if affected_rows > 0
+	 * 
+	 * @param JSON data of selected items
+	 * @param Example of $tableRepresent
+	[
+		"right" => ['name' => 'genres', 'value' => 'genreName'], 
+		"middle" => ['name' => 'books-genres', 'leftId' => 'bookId', 'rightId' => 'genreId'],
+		"leftId" => $createdBook['id']
+	]
+	*/
+	function selectItems ($jsonSelectData, $tableRepresent) {
+		$selectData = json_decode($jsonSelectData);
+		$tbRp = $tableRepresent;
+		$err = false;
+		global $conn;
+
+		$genres_ids = array();
+		$new_genres = array();
+
+		// Get values
+		foreach ($selectData as $id => $genreName){
+			if (is_numeric($id)){
+				$genres_ids[] = $id;
+			} else if ($id == 'new') {
+				$new_genres[] = $genreName;
+			}
+		}
+		// Check selected genres
+		$genres_ids_string = implode(',', $genres_ids);
+		if (!empty($genres_ids)) {
+			$inGenre = "SELECT id FROM `".$tbRp['right']['name']."` WHERE id IN ($genres_ids_string)";
+			if ($conn->query($inGenre)->num_rows != count($genres_ids)){
+				$err = "Неправильні жанри!";
+			}
+		}
+
+		if (!$err){
+			// Check and create new genres
+			if (!empty($new_genres)) {
+				foreach ($new_genres as $genreName){
+					$sqlGenre = $conn->query("SELECT * FROM `".$tbRp['right']['name']."` WHERE `".$tbRp['right']['value']."` = '$genreName'");
+					if ($fetchGenre = $sqlGenre->fetch_assoc()) {
+					 	in_array($fetchGenre['id'], $genres_ids) || $genres_ids[] = $fetchGenre['id'];
+					} else {
+						$genres_ids[] = $conn->query("INSERT INTO `".$tbRp['right']['name']."` (`".$tbRp['right']['value']."`) VALUES ('$genreName') RETURNING id")->fetch_assoc()['id'];
+					}
+				}
+			}
+
+			// Set genres
+			$genres_ids_string = "";
+			$comma = "";
+			// Generate values string
+			foreach($genres_ids as $genreId){
+				$genres_ids_string = $genres_ids_string . $comma . "(" . $genreId . ", " . $tbRp["leftId"] . ")";
+				$comma = ", ";
+			}
+			$conn->query("INSERT INTO `".$tbRp['middle']['name']."` (".$tbRp['middle']['rightId'].", ".$tbRp['middle']['leftId'].") VALUES $genres_ids_string");
+			return $conn->affected_rows > 0;
+		}
+	}
+
 	function stringFix(&$strint){
 		$strint = str_replace("'", "\'", $strint);
 		$strint = str_replace('"', '\"', $strint);		
@@ -20,8 +83,7 @@
 		$author = $_POST['author']; stringFix($author);
 		$author || $error = "Вкажіть автора";
 
-		$genre_json_selected = json_decode($_POST['genre_json_selected']);
-		$genre_json_selected || $error = "Вкажіть жанр";
+		json_decode($_POST['genre_json_selected']) || $error = "Вкажіть жанр";
 
 		$year = $_POST['year']; stringFix($year);
 		$year || $error = "Вкажіть рік випуску";
@@ -42,41 +104,8 @@
 		// Check book file
 		( $_FILES && $_FILES["book"]["error"] == UPLOAD_ERR_OK ) || $error = "Відсутній або несумісний файл книги";
 
-		// Check genres
-		$genres_ids = array();
-		$new_genres = array();
-
-		// Get values
-		foreach ($genre_json_selected as $id => $genreName){
-			if (is_numeric($id)){
-				$genres_ids[] = $id;
-			} else if ($id == 'new') {
-				$new_genres[] = $genreName;
-			}
-		}
-
-		// Check selected genres
-		$genres_ids_string = implode(',', $genres_ids);
-		if (!empty($genres_ids)) {
-			$inGenre = "SELECT * FROM genres WHERE id IN ($genres_ids_string)";
-			if ($conn->query($inGenre)->num_rows != count($genres_ids)){
-				$error = "Неправильні жанри!";
-			}
-		}
 
 		if (!$error){
-			// Check and create new genres
-			if (!empty($new_genres)) {
-				foreach ($new_genres as $genreName){
-					$thereIsGenre = "SELECT * FROM genres WHERE genreName = '$genreName'";
-					if ($fetchedGenre = $conn->query($thereIsGenre)->fetch_assoc() > 0) {
-						$genres_ids[] = $fetchedGenre['id'];
-					} else {
-						$genres_ids[] = $conn->query("INSERT INTO genres genreName = '$genreName'; SELECT LAST_INSERT_ID() AS id;")['id'];
-					}
-				}
-			}
-
 			// Save book cover image on the server =============
 			$filename = $_FILES["img"]["name"];
 			$i = 2;
@@ -85,7 +114,7 @@
 				$i += 1;
 			}
 			$path = 'book_cover_img/'.$filename;
-			// move_uploaded_file($_FILES["img"]["tmp_name"], $path);
+			move_uploaded_file($_FILES["img"]["tmp_name"], $path);
 			$imgurl = '/'.$path;			
 
 			// Save book file on the server ===================
@@ -96,26 +125,21 @@
 				$i += 1;
 			}
 			$path = 'books/'.$filename;
-			// move_uploaded_file($_FILES["book"]["tmp_name"], $path);
+			move_uploaded_file($_FILES["book"]["tmp_name"], $path);
 			$url = '/'.$path;
 			// ================================================
 
 			// Add the book to database
-			$sql = "INSERT INTO `books` (`name`, `author`, `date`, `language`, `pages`, `url`, `description`, `coverimg`, `audio`, `postAuthor`) VALUES ('$name', '$author', '$year', '$language', '$pages', '$url', '$description', '$imgurl', '$audio', '$loggedUserLogin')";
-			$conn->query($sql);
-			$bookId = $conn->query("SELECT LAST_INSERT_ID() AS id")->fetch_assoc()['id'];
+			$sql = "INSERT INTO `books` (`name`, `author`, `date`, `language`, `pages`, `url`, `description`, `coverimg`, `audio`, `postAuthor`) VALUES ('$name', '$author', '$year', '$language', '$pages', '$url', '$description', '$imgurl', '$audio', '$loggedUserLogin') RETURNING *";
+			$createdBook = $conn->query($sql)->fetch_assoc();
 
+			selectItems($_POST['genre_json_selected'], [
+				"right" => ['name' => 'genres', 'value' => 'genreName'], 
+				"middle" => ['name' => 'books-genres', 'leftId' => 'bookId', 'rightId' => 'genreId'],
+				"leftId" => $createdBook['id']
+			]);
 
-			// Set genres
-			$genres_ids_string = "";
-			$comma = "";
-			foreach($genres_ids as $genreId){
-				$genres_ids_string = $genres_ids_string . $comma . "(" . $genreId . ", " . $bookId . ")";
-				$comma = ", ";
-			}
-			// $conn->query("INSERT INTO `books-genres` (genreId, bookId) VALUES $genres_ids_string");
-
-			// header("location: /");
+			header("location: /kniga.php?id=".$createdBook['id']);
 		}
 	}
 ?>
@@ -227,7 +251,7 @@
 
 					<textarea placeholder="Опис" required rows="10" cols="50" name="description"></textarea><br>
 
-					<button name="done" style="padding: 8px 20px; font-size: 1.7em; margin: 16px 0;">Створити</button>
+					<button name="done" style="padding: 8px 20px; font-size: 1.7em; margin: 8px 0;">Створити</button>
 				</form>
 			</div>
 		</div>
@@ -246,13 +270,22 @@ function setImagePreview(fileSelectorElement, type){
 		fileSelectorElement.querySelector(".file_selector_text").innerHTML = "<i class='fa-solid fa-repeat'></i> Змінити";
 		fileSelectorElement.setAttribute('fileselected', true);
 		fileSelectorElement.querySelector(".selected_file").innerHTML = "" + stringShortify(file.name, 4, 7, 20, "<b style='color: white'>...</b>");
-		if (type == 'image'){
-			imgElem.src = URL.createObjectURL(file);
-		}
 	} else {
 		fileSelectorElement.querySelector(".file_selector_text").innerHTML = "<i class='fa-solid fa-plus'></i> Вибрати";
 		fileSelectorElement.setAttribute('fileselected', false);
 		fileSelectorElement.querySelector(".selected_file").innerHTML = "";		
+	}
+	if (type == 'image'){
+		const placeholder = imgElem.getAttribute('placeholder');
+
+		if (file) {
+			// Save default image src, if it's not setted
+			placeholder || imgElem.setAttribute('placeholder', imgElem.getAttribute('src'));
+			// Set selected image src
+			imgElem.src = URL.createObjectURL(file);
+		} else {
+			placeholder && ( imgElem.src = placeholder );
+		}
 	}
 }
 

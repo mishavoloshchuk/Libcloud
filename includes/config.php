@@ -2,8 +2,8 @@
 	$config = array(
 		'db' => array(
 				'server' => 'localhost',
-				'user' => 'mysql',
-				'password' => 'mysql',
+				'user' => 'root',
+				'password' => '',
 				'database_name' => 'LibCloud'
 			)
 	);
