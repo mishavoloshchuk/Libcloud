@@ -23,20 +23,30 @@
 
 	$flim = 0; $lim = 256;
 
-	$qBooks = $conn->query("SELECT books.* FROM books ORDER BY comments DESC LIMIT $flim, $lim");
+	switch ($_GET['sort']){
 
-	if ($_GET['sort'] == 'new'){
-		$qBooks = $conn->query("SELECT books.* FROM books ORDER BY `date` DESC LIMIT $flim, $lim");
-	} else
-	if ($_GET['sort'] == 'audiobooks'){
-		$qBooks = $conn->query("SELECT books.* FROM books WHERE `audio` = 1 ORDER BY `date` DESC LIMIT $flim, $lim");
-	} else
-	if ($_GET['sort'] == 'topaudio'){
-		$qBooks = $conn->query("SELECT books.* FROM books WHERE `audio` = 1 ORDER BY `comments` DESC LIMIT $flim, $lim");
-	} else
-	if ($_GET['sort'] == 'collections'){
-		$qBooks = $conn->query("SELECT collections.*, login FROM `collections` LEFT JOIN users ON collections.userId = users.id ORDER BY `date`");
-	} else
+	case 'new':
+		$qBooks = $conn->query("SELECT * FROM books ORDER BY `date` DESC LIMIT $flim, $lim");
+		break; 
+	case 'audiobooks':
+		$qBooks = $conn->query("SELECT * FROM books WHERE `audio` = 1 ORDER BY `date` DESC LIMIT $flim, $lim");
+		break;
+	case 'topaudio':
+		$qBooks = $conn->query("SELECT * FROM books WHERE `audio` = 1 ORDER BY `comments` DESC LIMIT $flim, $lim");
+		break;
+	case 'collections':
+		$qBooks = $conn->query("
+			SELECT collections.*, login FROM `collections` 
+			LEFT JOIN users ON collections.userId = users.id 
+			ORDER BY `date`");
+		break;
+
+	default:
+		$qBooks = $conn->query("SELECT books.* FROM books ORDER BY comments DESC LIMIT $flim, $lim");
+
+	}
+
+
 	if ($_GET['collection']){
 		$collection_id = $_GET['collection'];
 		$collection = $conn->query("SELECT * FROM `collections` WHERE `id` = '$collection_id'")->fetch_assoc();
