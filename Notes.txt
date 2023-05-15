@@ -2,7 +2,7 @@ Notes
 
 
 Fix list:
-	• Auth/register page footer
+✔	• Auth/register page footer
 
 Завдання
 • Книги можливі для покупки
