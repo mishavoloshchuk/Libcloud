@@ -33,7 +33,7 @@
 				<? if ($page != 'register.php'): ?>
 					<div class="nav_item"><a href="/register.php"><i class="fa-solid fa-user-plus"></i> Реєстрація</a></div>
 				<? endif; if ($page != 'auth.php'): ?>
-					<div class="nav_item"><a href="auth.php"><i class="fa-solid fa-right-to-bracket"></i> Авторизація</a></div>
+					<div class="nav_item"><a href="/auth.php"><i class="fa-solid fa-right-to-bracket"></i> Авторизація</a></div>
 				<? endif; ?>
 			<?php endif; ?>
 		</nav>
