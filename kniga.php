@@ -133,7 +133,13 @@ window.onload = function(){
 				<div class="golovna-kniga1">
 					<div class="kniga-img"><img src="<?php echo $book['coverimg'];?>" alt="" width="100%"></div>
 						<p class="nazva"><?php echo $book['name'];?></p><br>
-						<p>Автор:  <span class="textInfo"><?php echo $book['author'];?></span></p>
+						<p>Автор: <span class="textInfo">
+							<? $joinSing = ''; foreach (getBookAuthors($bookId) AS $authorId => $authorName):
+								echo $joinSing;
+								echo "<a href='/?author=$authorId' class='textInfoGenres'>$authorName</a>";
+								$joinSing = ", ";
+							endforeach; ?>
+						</span></p>
 						<p>Жанр: <span class="textInfo">
 							<? $joinSing = ''; foreach (getBookGenres($bookId) AS $genreId => $genreName):
 								echo $joinSing;

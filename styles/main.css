@@ -453,6 +453,18 @@ body .golovna .knigi .innerKniga {
 	word-wrap: break-word;
 }
 
+.authorImage {
+	width: 100%;
+	text-align: center;
+}
+.authorImage img {
+	width: 200px;
+	aspect-ratio: 1;
+	object-fit: cover;
+	border-radius: 50%;
+	box-shadow: 3px 3px 15px black;
+}
+
 body .golovna .knigi .kniga img{
 	padding: 0;
 	width: 100%;

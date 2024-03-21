@@ -1,5 +1,10 @@
 <?php require_once('includes/config.php');
 	require_once("includes/kniga_tools.php");
+	if (file_exists("includes/api_keys.php")) {
+		require_once("includes/api_keys.php");
+	} else {
+		error_log("Please, create includes/api_keys.php file!");
+	}
 
 	// Delete book from the collection
 	if (isset($_POST['deleteBookId'])){
@@ -57,9 +62,14 @@
 		$genre = $_GET['genre'];
 		$qBooks = $conn->query("SELECT books.* FROM `books-genres` INNER JOIN books ON bookId = books.id WHERE `genreId` = '$genre' ORDER BY `comments` DESC LIMIT $flim, $lim");
 	} else
+	if ($_GET['author']){
+		$author = $_GET['author'];
+		$authorName = $conn->query("SELECT authorName FROM authors WHERE id = $author")->fetch_assoc()['authorName'];
+		$qBooks = $conn->query("SELECT books.* FROM `books-authors` INNER JOIN books ON bookId = books.id WHERE `authorId` = '$author' ORDER BY `comments` DESC LIMIT $flim, $lim");
+	} else
 	if ($_GET['search']){
 		$search = $_GET['search'];
-		$qBooks = "SELECT books.* FROM `books` WHERE (`description` LIKE '%$search%') OR (`name` LIKE '%$search%') OR (`author` LIKE '%$search%') OR (`date` LIKE '%$search%') ORDER BY `comments` DESC LIMIT $flim, $lim";
+		$qBooks = "SELECT books.* FROM `books` WHERE (`description` LIKE '%$search%') OR (`name` LIKE '%$search%') OR (`date` LIKE '%$search%') ORDER BY `comments` DESC LIMIT $flim, $lim";
 		$qBooks = $conn->query($qBooks);
 	}
 ?>
@@ -112,6 +122,13 @@
 			<? elseif (!$qBooks->num_rows): ?>
 				<!-- There's nothing to show yet -->
 				<br><h1>Поки що, нічого немає...</h1><br>
+			<? elseif ($author): ?>
+				<!-- Show author name and image -->
+				<div class="authorImage">
+					<img src="<?php echo getFirstImageByGoogleQuery($authorName); ?>" alt="">
+				</div>
+				<h2><? echo $authorName ?></h2>
+				<br>
 			<? endif; ?>
 			<div class="booksGrid">
 				<? 
@@ -144,7 +161,7 @@
 									<br>
 									<h3 class="kniga_title"><?php echo $book['name'];?></h3>
 									<div class="kniga_about">
-										<dd class="kniga_item_about_author"><?php echo $book['author'];?></dd>
+										<dd class="kniga_item_about_author"><?php echo implode(", ", getBookAuthors($id));?></dd>
 										<dd class="kniga_item_about_genre"><?php echo implode(", ", getBookGenres($id));?></dd>
 										<dd><?php echo $book['date'];?></dd>
 									</div>
@@ -169,3 +186,47 @@
 </body>
 
 </html>
+
+<?php 
+function getFirstImageByGoogleQuery($query){
+	global $api_keys;
+	$query = str_replace(' ', '+', $query);
+	$arrContextOptions = array(
+		"ssl"=>array(
+			"verify_peer"=>false,
+			"verify_peer_name"=>false,
+		),
+	);
+	$apiKey = $api_keys['google_api_key'];
+	$url = "https://www.googleapis.com/customsearch/v1/siterestrict?key={$apiKey}&cx=838fe554425c54c0b&q=";
+	$apiText = @file_get_contents($url . $query, false, stream_context_create($arrContextOptions));
+	$searchInfo = json_decode($apiText, true);
+
+	$imgURL = '';
+	$getNum = 0; // Get image by number
+	$DEFAULT_IMG_URL = "/img/user_img.jpg";
+
+	if (!$searchInfo){
+		return $DEFAULT_IMG_URL;
+	}
+
+	foreach ($searchInfo['items'] as $item){	
+		$ogImage = $item['pagemap']['metatags'][0]['og:image'] ?? null;
+	
+		if ($ogImage == null) { continue; }
+
+		$imgURL = $ogImage;
+		if ($getNum > 0) {
+			$getNum--;
+		} else {
+			break;
+		}
+	}
+
+	if (!$imgURL){
+		return $DEFAULT_IMG_URL;
+	}
+
+	return $imgURL;
+}
+?>

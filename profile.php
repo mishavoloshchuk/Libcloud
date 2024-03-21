@@ -93,7 +93,7 @@ if (isset($_POST['deleteCollection'])){
 									<br>
 									<h3><?php echo $book['name'];?></h3><br>
 									<div class="kniga_about">
-										<dd class="kniga_item_about_author"><?php echo $book['author'];?></dd>
+										<dd class="kniga_item_about_author"><?php echo implode(", ", getBookAuthors($book_id));?></dd>
 										<dd class="kniga_item_about_genre"><?php echo implode(", ", getBookGenres($book_id));?></dd>
 										<dd><?php echo $book['date'];?></dd>
 									</div>

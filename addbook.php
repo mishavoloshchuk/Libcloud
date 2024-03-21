@@ -80,8 +80,7 @@
 		$name = $_POST['book_title']; stringFix($name);
 		$name || $error = "Вкажіть назву книги";
 
-		$author = $_POST['author']; stringFix($author);
-		$author || $error = "Вкажіть автора";
+		json_decode($_POST['author_json_selected']) || $error = "Вкажіть автора";
 
 		json_decode($_POST['genre_json_selected']) || $error = "Вкажіть жанр";
 
@@ -133,6 +132,14 @@
 			$sql = "INSERT INTO `books` (`name`, `author`, `date`, `language`, `pages`, `url`, `description`, `coverimg`, `audio`, `postAuthor`) VALUES ('$name', '$author', '$year', '$language', '$pages', '$url', '$description', '$imgurl', '$audio', '$loggedUserLogin') RETURNING *";
 			$createdBook = $conn->query($sql)->fetch_assoc();
 
+			// Add authors
+			selectItems($_POST['author_json_selected'], [
+				"right" => ['name' => 'authors', 'value' => 'authorName'], 
+				"middle" => ['name' => 'books-authors', 'leftId' => 'bookId', 'rightId' => 'authorId'],
+				"leftId" => $createdBook['id']
+			]);
+
+			// Add genres
 			selectItems($_POST['genre_json_selected'], [
 				"right" => ['name' => 'genres', 'value' => 'genreName'], 
 				"middle" => ['name' => 'books-genres', 'leftId' => 'bookId', 'rightId' => 'genreId'],
@@ -164,6 +171,7 @@
 				<h3 class="error_text_h3"><? echo $error; ?></h3>
 				<form action="" class="bookAddForm" method="POST" enctype="multipart/form-data" onsubmit="
 					this.genre_json_selected.value = JSON.stringify(getSelectManyData('add_genre_input'));
+					this.author_json_selected.value = JSON.stringify(getSelectManyData('add_author_input'));
 
 				">
 					<br>
@@ -173,7 +181,32 @@
 
 					<div class="bookAddFormBlock inputs">
 						<!-- Book author -->
-						<input placeholder="Автор" title="Автор" required type="text" name="author">
+						<div class="select_many" id="add_author_input">
+							<input type="text" value="asd" class="display_none" name="author_json_selected">
+							<span class="select_many_text">Виберіть автора(ів):</span>
+
+							<!-- Item example -->
+							<span class="select_many_item display_none">
+								<span class="text" style="min-width: 1em;">Book author</span>
+								<i class="fa-solid fa-xmark genre_cancel_btn" onclick="
+									const selectManyElem = this.closest('.select_many');
+									this.parentNode.remove(); 
+									if (!selectManyElem.querySelector('.select_many_item:not(.display_none)')) selectManyElem.querySelector('select').value = ''; // Reset value if no options selected
+								"></i>
+							</span>
+
+							<select required name="author" onchange="selectMany('add_author_input');">
+								<option value="" disabled selected>+</option>
+								<option value="-1" disabled class="display_none">+</option>
+								<option value="new" placeholder="Ім'я автора">Новий автор</option>
+								<?
+								$sql = $conn->query("SELECT * FROM authors ORDER BY authorName");
+								while ($author = $sql->fetch_assoc() ): ?>
+									<option value="<? echo $author['id'] ?>"><? echo $author['authorName'] ?></option>
+								<? endwhile; ?>
+							</select>
+						</div>
+
 						<!-- Book release date -->
 						<input placeholder="Рік" title="Рік випуску" required type="number" name="year">
 						<div class="book-add-double-item">
@@ -214,7 +247,7 @@
 							<select required name="genre" onchange="selectMany('add_genre_input');">
 								<option value="" disabled selected>+</option>
 								<option value="-1" disabled class="display_none">+</option>
-								<option value="new">Новий жанр</option>
+								<option value="new" placeholder="Назва жанру">Новий жанр</option>
 								<?
 								$sql = $conn->query("SELECT * FROM genres ORDER BY genreName");
 								while ($genre = $sql->fetch_assoc() ): ?>
@@ -330,9 +363,9 @@ function selectMany(selectElemId){
 
 	// If new genre
 	if (input.value === 'new'){
-		genreItem.setAttribute('new', '');
-		genreItemText.innerHTML = "Назва жанру";
-		genreItemText.setAttribute('contenteditable', '');
+		genreItem.setAttribute('new', ''); // Mark item as "new"
+		genreItemText.innerHTML = input.options[input.selectedIndex].getAttribute('placeholder'); // Set placeholder
+		genreItemText.setAttribute('contenteditable', ''); // Set contenteditable
 		genreItemText.focus();
 		selectText(genreItemText);
 	}
