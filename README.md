@@ -1,4 +1,8 @@
-**LibCloud** - is a online library with many features, such as book reviews, collections, book creation (for admins), search and more!
+# About LibCloud
+
+**LibCloud** - is an online library with many features, such as book reviews, collections, book creation (for admins), search and more!
+
+## Screenshots
 
 ![Знімок екрана 2023-06-14 105729](https://github.com/mishavoloshchuk/Libcloud/assets/54890360/b16d3eac-7e5d-4be2-883c-d39b4b0c0cdc)
 ![libcloud_smartphone](https://github.com/mishavoloshchuk/Libcloud/assets/54890360/29bcdbee-28ed-4167-8234-f76a1064c09b)
